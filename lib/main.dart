@@ -34,7 +34,6 @@ class SafeZoneHome extends StatefulWidget {
 class _SafeZoneHomeState extends State<SafeZoneHome> {
   int _selectedIndex = 0;
   bool _trackingEnabled = false;
-  bool _emergencyMode = false;
   bool _notificationsEnabled = true;
   int _activeZoneIndex = 0;
   int _secondsInZone = 0;
@@ -92,7 +91,9 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
         _secondsInZone += 5;
         final minutes = _secondsInZone / 60;
         final intensifier = zone.minutes.toDouble();
-        _riskLevel = (18 + minutes * 8 + intensifier * (minutes / 2)).clamp(10, 96);
+        _riskLevel = (18 + minutes * 8 + intensifier * (minutes / 2))
+            .clamp(10.0, 96.0)
+            .toDouble();
       });
     });
   }
@@ -233,7 +234,7 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
         ),
         const SizedBox(height: 18),
         _sectionHeader('Aanbevolen zones', 'Alles bekijken'),
-        ..._dangerZones.map((zone) => _zoneRecommendationTile(zone)).toList(),
+        ..._dangerZones.map((zone) => _zoneRecommendationTile(zone)),
       ],
     );
   }
@@ -259,7 +260,7 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
             ),
           ],
         ),
-        ..._dangerZones.map((zone) => _zoneSelectionTile(zone)).toList(),
+        ..._dangerZones.map((zone) => _zoneSelectionTile(zone)),
       ],
     );
   }
@@ -278,7 +279,7 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
           label: const Text('Meld een onveilige plek'),
         ),
         const SizedBox(height: 16),
-        ..._communityReports.map((report) => _communityReportCard(report)).toList(),
+        ..._communityReports.map((report) => _communityReportCard(report)),
       ],
     );
   }
@@ -294,7 +295,7 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
         ..._contacts.map((contact) => Card(
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: const Color(0xFF7C4DFF).withOpacity(0.12),
+              backgroundColor: const Color(0xFF7C4DFF).withValues(alpha: 0.12),
               child: Icon(contact.icon, color: const Color(0xFF7C4DFF)),
             ),
             title: Text(contact.name, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -348,7 +349,7 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: activeZone.color.withOpacity(0.15),
+                  backgroundColor: activeZone.color.withValues(alpha: 0.15),
                   child: Icon(activeZone.icon, color: activeZone.color),
                 ),
                 const SizedBox(width: 10),
@@ -433,7 +434,7 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
       color: selected ? Colors.red.shade50 : null,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: zone.color.withOpacity(0.15),
+          backgroundColor: zone.color.withValues(alpha: 0.15),
           child: Icon(zone.icon, color: zone.color),
         ),
         title: Text(zone.name, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -442,7 +443,7 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
           onPressed: () {
             setState(() {
               _activeZoneIndex = _dangerZones.indexOf(zone);
-              _riskLevel = (18 + zone.minutes * 6).clamp(15, 90);
+              _riskLevel = (18 + zone.minutes * 6).clamp(15.0, 90.0).toDouble();
             });
             _showMessage('Zone ${zone.name} geselecteerd.');
           },
@@ -460,11 +461,11 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
         onChanged: (_) {
           setState(() {
             _activeZoneIndex = _dangerZones.indexOf(zone);
-            _riskLevel = (18 + zone.minutes * 8).clamp(15, 90);
+            _riskLevel = (18 + zone.minutes * 8).clamp(15.0, 90.0).toDouble();
           });
         },
         secondary: CircleAvatar(
-          backgroundColor: zone.color.withOpacity(0.12),
+          backgroundColor: zone.color.withValues(alpha: 0.12),
           child: Icon(zone.icon, color: zone.color),
         ),
         title: Text(zone.name, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -477,7 +478,7 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
     return Card(
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: report.color.withOpacity(0.18),
+          backgroundColor: report.color.withValues(alpha: 0.18),
           child: Icon(report.icon, color: report.color),
         ),
         title: Text(report.title, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -641,7 +642,7 @@ class _MapPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final roadPaint = Paint()
-      ..color = Colors.white.withOpacity(0.75)
+      ..color = Colors.white.withValues(alpha: 0.75)
       ..strokeWidth = 6
       ..style = PaintingStyle.stroke;
 
