@@ -199,8 +199,8 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: Color.fromARGB((0.15 * 255).toInt(), zone.color.r, zone.color.g, zone.color.b),
-                  child: Icon(zone.icon, color: Color.fromARGB((0.8 * 255).toInt(), zone.color.r, zone.color.g, zone.color.b)),
+                  backgroundColor: zone.color.withValues(alpha: 0.15),
+                  child: Icon(zone.icon, color: zone.color.withValues(alpha: 0.8)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -238,8 +238,8 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
         elevation: 2,
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: Color.fromARGB((0.15 * 255).toInt(), zone.color.r, zone.color.g, zone.color.b),
-            child: Icon(zone.icon, color: Color.fromARGB((0.85 * 255).toInt(), zone.color.r, zone.color.g, zone.color.b)),
+            backgroundColor: zone.color.withValues(alpha: 0.15),
+            child: Icon(zone.icon, color: zone.color.withValues(alpha: 0.85)),
           ),
           title: Text(zone.name, style: const TextStyle(fontWeight: FontWeight.bold)),
           subtitle: Text('${zone.district} · ${zone.risk}'),
@@ -414,7 +414,7 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
     FilledButton.icon(onPressed: () { Navigator.pop(context); _notify('Noodcontacten ingelicht'); _snack('Noodcontacten zijn ingelicht.'); }, icon: const Icon(Icons.person), label: const Text('Noodcontacten melden')),
     const SizedBox(height: 8),
     OutlinedButton(onPressed: () => Navigator.pop(context), style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white)), child: const Text('Annuleren', style: TextStyle(color: Colors.white))),
-  ])));
+  ]))));
 }
 
 class _Zone { 
