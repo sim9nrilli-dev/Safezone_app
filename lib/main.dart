@@ -33,21 +33,9 @@ class SafeZoneHome extends StatefulWidget {
 
 class _SafeZoneHomeState extends State<SafeZoneHome> {
   final _map = MapController();
-  final _zones = const [
-    _Zone('Station Zuid', 'Centrum', 'Hoog risico', Color(0xFFD32F2F), Icons.train, LatLng(52.3380, 4.8737), 12),
-    _Zone('Westerpark', 'Noord', 'Waarschuwing', Color(0xFFFF8F00), Icons.park, LatLng(52.3876, 4.8756), 7),
-    _Zone('Museumplein', 'Zuid', 'Veilig', Color(0xFFFFC107), Icons.museum, LatLng(52.3580, 4.8815), 2),
-  ];
-  final _contacts = const [
-    _Contact('Mama', '06 12 34 56 78', Icons.person),
-    _Contact('Lotte', '06 23 45 67 89', Icons.person_2),
-    _Contact('Bram', '06 98 76 54 32', Icons.person_3),
-  ];
-  final _reports = <_Report>[
-    _Report('Slechte verlichting in de tunnel', 'Onveilige verlichting', LatLng(52.3665, 4.9000)),
-    _Report('Toezicht verhoogd bij Station Zuid', 'Politie/toezicht', LatLng(52.3380, 4.8737)),
-    _Report('Veilige koffiebar open tot laat', 'Veilige plek', LatLng(52.3580, 4.8815)),
-  ];
+  late List<_Zone> _zones = [];
+  late List<_Contact> _contacts = [];
+  late List<_Report> _reports = [];
 
   int _page = 0;
   int _zone = 0;
@@ -62,12 +50,17 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
   @override
   void initState() {
     super.initState();
+    _zones = [];
+    _contacts = [];
+    _reports = [];
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!_tracking || !mounted) return;
       setState(() {
         _seconds += 5;
         final minutes = _seconds / 60;
-        _risk = (18 + minutes * 8 + _zones[_zone].minutes * minutes / 2).clamp(10.0, 96.0).toDouble();
+        if (_zones.isNotEmpty) {
+          _risk = (18 + minutes * 8 + _zones[_zone].minutes * minutes / 2).clamp(10.0, 96.0).toDouble();
+        }
       });
     });
   }
@@ -177,9 +170,11 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
           )),
           const SizedBox(height: 18),
           _section('Veiligheidsstatus'),
-          _riskCard(),
+          if (_zones.isNotEmpty) _riskCard(),
           const SizedBox(height: 18),
           _section('Aanbevolen zones'),
+          if (_zones.isEmpty)
+            const Padding(padding: EdgeInsets.all(16), child: Text('Geen zones toegevoegd. Voeg zones toe via de kaart.')),
           ..._zones.map(_zoneTile),
         ],
       );
@@ -190,6 +185,7 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
       ]);
 
   Widget _riskCard() {
+    if (_zones.isEmpty) return const SizedBox.shrink();
     final zone = _zones[_zone];
     final color = _risk > 70 ? const Color(0xFFD32F2F) : (_risk > 40 ? const Color(0xFFFF8F00) : const Color(0xFFFFC107));
     return Card(elevation: 3, child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -219,7 +215,9 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
   Widget _mapPage() => ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 100), children: [
         Text('Veiligheidskaart', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 6), const Text('Bekijk zones, meldingen en je actuele positie.'), const SizedBox(height: 18), _mapWidget(),
-        const SizedBox(height: 18), const Text('Meldingen op de kaart', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), const SizedBox(height: 8), ..._reports.map(_reportTile),
+        const SizedBox(height: 18), const Text('Meldingen op de kaart', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), const SizedBox(height: 8),
+        if (_reports.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('Geen meldingen. Voeg meldingen toe via Community.')),
+        ..._reports.map(_reportTile),
       ]);
 
   Widget _mapWidget() {
@@ -237,22 +235,32 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
   Widget _community() => ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 100), children: [
         Text('Community', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8), const Text('Deel echte informatie met mensen in jouw buurt.'), const SizedBox(height: 16),
-        FilledButton.icon(onPressed: _addReport, icon: const Icon(Icons.add_location_alt), label: const Text('Meld een onveilige plek'), style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFF8F00))),
-        const SizedBox(height: 16), ..._reports.map(_reportTile),
+        FilledButton.icon(onPressed: _addReport, icon: const Icon(Icons.add_location_alt), label: const Text('Meld iets in je buurt'), style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFF8F00))),
+        const SizedBox(height: 16),
+        if (_reports.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('Geen meldingen. Voeg een melding toe om te beginnen.'))
+        else ..._reports.map(_reportTile),
       ]);
 
   Widget _contactsPage() => ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 100), children: [
         Text('Vertrouwde contacten', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8), const Text('Deze personen ontvangen een melding als je hulp nodig hebt.'), const SizedBox(height: 16),
-        ..._contacts.map((c) => Card(elevation: 2, child: ListTile(
-          leading: CircleAvatar(backgroundColor: const Color(0xFFFFC107), child: Icon(c.icon)), title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(c.phone),
+        FilledButton.icon(onPressed: _addContact, icon: const Icon(Icons.person_add), label: const Text('Contact toevoegen'), style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFF8F00))),
+        const SizedBox(height: 16),
+        if (_contacts.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('Geen contacten toegevoegd. Voeg contacten toe voor noodgeval.'))
+        else ..._contacts.map((c) => Card(elevation: 2, child: ListTile(
+          leading: CircleAvatar(backgroundColor: const Color(0xFFFFC107), child: Icon(c.icon)), 
+          title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold)), 
+          subtitle: Text(c.phone),
           trailing: IconButton(onPressed: () => _call(c), icon: const Icon(Icons.phone, color: Color(0xFFD32F2F))),
         ))),
       ]);
 
   Widget _reportTile(_Report report) => Card(elevation: 2, child: ListTile(
     leading: Icon(report.type == 'Veilige plek' ? Icons.shield : Icons.warning_amber, color: report.type == 'Veilige plek' ? const Color(0xFFFFC107) : const Color(0xFFD32F2F)),
-    title: Text(report.title, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(report.type), trailing: const Icon(Icons.chevron_right), onTap: () => _showReport(report),
+    title: Text(report.title, style: const TextStyle(fontWeight: FontWeight.bold)), 
+    subtitle: Text(report.type), 
+    trailing: const Icon(Icons.chevron_right), 
+    onTap: () => _showReport(report),
   ));
 
   Future<void> _addReport() async {
@@ -273,8 +281,30 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
     if (result != null && mounted) { setState(() => _reports.insert(0, result)); _notify('Nieuwe melding geplaatst: ${result.title}'); _snack('Melding geplaatst en zichtbaar op de kaart.'); }
   }
 
-  void _showReport(_Report report) => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (_) => SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text(report.title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)), const SizedBox(height: 8), Text(report.type), const SizedBox(height: 20), SizedBox(width: double.infinity, child: FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Sluiten'))),
+  Future<void> _addContact() async {
+    final name = TextEditingController();
+    final phone = TextEditingController();
+    final result = await showDialog<_Contact>(context: context, builder: (dialogContext) => AlertDialog(
+      title: const Text('Contact toevoegen'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: name, autofocus: true, decoration: const InputDecoration(labelText: 'Naam', border: OutlineInputBorder())),
+        const SizedBox(height: 12), 
+        TextField(controller: phone, decoration: const InputDecoration(labelText: 'Telefoonnummer', hintText: '06 12 34 56 78', border: OutlineInputBorder()), keyboardType: TextInputType.phone),
+      ]),
+      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Annuleren')), FilledButton(onPressed: () {
+        if (name.text.trim().isEmpty || phone.text.trim().isEmpty) {
+          _snack('Vul alle velden in.');
+          return;
+        }
+        Navigator.pop(dialogContext, _Contact(name.text.trim(), phone.text.trim(), Icons.person));
+      }, style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFF8F00)), child: const Text('Toevoegen'))],
+    ));
+    name.dispose(); phone.dispose();
+    if (result != null && mounted) { setState(() => _contacts.insert(0, result)); _notify('Contact toegevoegd: ${result.name}'); _snack('${result.name} is toegevoegd als vertrouwd contact.'); }
+  }
+
+  void _showReport(_Report report) => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (_) => SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [
+    Text(report.title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)), const SizedBox(height: 8), Text(report.type), const SizedBox(height: 20), SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close), label: const Text('Sluiten'), style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFF8F00)))),
   ]))));
 
   Future<void> _call(_Contact contact) async {
@@ -282,8 +312,8 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
     if (await canLaunchUrl(uri)) { await launchUrl(uri); _notify('Bellen naar ${contact.name}'); } else { _snack('Bellen wordt niet ondersteund op dit apparaat.'); }
   }
 
-  void _showNotifications() => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (_) => SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-    const Text('Meldingen', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), const SizedBox(height: 12), if (_notifications.isEmpty) const Text('Geen meldingen') else ..._notifications.map((n) => ListTile(leading: const Icon(Icons.notifications_active, color: Color(0xFFFFA000)), title: Text(n))),
+  void _showNotifications() => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (_) => SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [
+    const Text('Meldingen', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), const SizedBox(height: 12), if (_notifications.isEmpty) const Text('Geen meldingen') else Expanded(child: ListView(children: _notifications.map((n) => Padding(padding: const EdgeInsets.all(8), child: Text(n))).toList())),
   ]))));
 
   void _showSettings() => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (_) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -293,15 +323,55 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
     ListTile(leading: const Icon(Icons.info, color: Color(0xFFFFA000)), title: const Text('Over SafeZone'), onTap: () { Navigator.pop(context); _snack('SafeZone versie 1.0.0'); }),
   ])));
 
-  void _emergency() => showModalBottomSheet<void>(context: context, showDragHandle: true, backgroundColor: const Color(0xFFD32F2F), builder: (_) => SafeArea(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
-    const Icon(Icons.sos, color: Colors.white, size: 48), const SizedBox(height: 12), const Text('Bel 112 bij direct gevaar.', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), const SizedBox(height: 20),
-    FilledButton.icon(onPressed: () async { final uri = Uri(scheme: 'tel', path: '112'); if (await canLaunchUrl(uri)) { await launchUrl(uri); _notify('Noodoproep: 112'); } }, icon: const Icon(Icons.phone), label: const Text('BELLEN: 112'), style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFFD32F2F))),
-    const SizedBox(height: 10), FilledButton.icon(onPressed: () { Navigator.pop(context); _notify('Noodcontacten ingelicht'); _snack('Noodcontacten zijn ingelicht.'); }, icon: const Icon(Icons.person_add), label: const Text('NOODCONTACTEN WAARSCHUWEN'), style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFFD32F2F))),
+  void _emergency() => showModalBottomSheet<void>(context: context, showDragHandle: true, backgroundColor: const Color(0xFFD32F2F), builder: (_) => SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [
+    const Icon(Icons.sos, color: Colors.white, size: 48), const SizedBox(height: 12), const Text('Bel 112 bij direct gevaar.', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), const SizedBox(height: 24),
+    FilledButton.icon(onPressed: () async { final uri = Uri(scheme: 'tel', path: '112'); if (await canLaunchUrl(uri)) { await launchUrl(uri); _notify('Noodoproep: 112'); } }, icon: const Icon(Icons.phone), label: const Text('Bel 112'), style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFFD32F2F))),
+    const SizedBox(height: 10), FilledButton.icon(onPressed: () { Navigator.pop(context); _notify('Noodcontacten ingelicht'); _snack('Noodcontacten zijn ingelicht.'); }, icon: const Icon(Icons.person_add), label: const Text('Waarschuw contacten'), style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFFD32F2F))),
     const SizedBox(height: 8), OutlinedButton(onPressed: () => Navigator.pop(context), style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white)), child: const Text('Annuleren', style: TextStyle(color: Colors.white))),
   ]))));
 }
 
-class _Zone { final String name, district, risk; final Color color; final IconData icon; final LatLng location; final int minutes; const _Zone(this.name, this.district, this.risk, this.color, this.icon, this.location, this.minutes); }
-class _Contact { final String name, phone; final IconData icon; const _Contact(this.name, this.phone, this.icon); }
-class _Report { final String title, type; final LatLng location; const _Report(this.title, this.type, this.location); }
-class _Marker extends StatelessWidget { final Color color; final String label; const _Marker({required this.color, required this.label}); @override Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4), decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(7)), child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))), Icon(Icons.location_pin, color: color, size: 30)]); }
+class _Zone { 
+  final String name, district, risk; 
+  final Color color; 
+  final IconData icon; 
+  final LatLng location; 
+  final int minutes; 
+  const _Zone(this.name, this.district, this.risk, this.color, this.icon, this.location, this.minutes); 
+}
+
+class _Contact { 
+  final String name, phone; 
+  final IconData icon; 
+  const _Contact(this.name, this.phone, this.icon); 
+}
+
+class _Report { 
+  final String title, type; 
+  final LatLng location; 
+  const _Report(this.title, this.type, this.location); 
+}
+
+class _Marker extends StatelessWidget { 
+  final Color color; 
+  final String label; 
+  const _Marker({required this.color, required this.label}); 
+  @override 
+  Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [
+    Container(width: 40, height: 40, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)), child: Center(child: Text(label.isNotEmpty ? label[0] : '?', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
+    CustomPaint(painter: _TrianglePainter(color), size: const Size(10, 8)),
+  ]); 
+}
+
+class _TrianglePainter extends CustomPainter {
+  final Color color;
+  _TrianglePainter(this.color);
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    final path = Path()..moveTo(size.width / 2, 0)..lineTo(0, size.height)..lineTo(size.width, size.height)..close();
+    canvas.drawPath(path, paint);
+  }
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
