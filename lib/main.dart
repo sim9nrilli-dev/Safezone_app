@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -189,9 +190,9 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
     final zone = _zones[_zone];
     final color = _risk > 70 ? const Color(0xFFD32F2F) : (_risk > 40 ? const Color(0xFFFF8F00) : const Color(0xFFFFC107));
     return Card(elevation: 3, child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [CircleAvatar(backgroundColor: zone.color.withOpacity(.15), child: Icon(zone.icon, color: zone.color)), const SizedBox(width: 10), Expanded(child: Text('${zone.name}\n${zone.risk}', style: const TextStyle(fontWeight: FontWeight.bold)))]),
+      Row(children: [CircleAvatar(backgroundColor: Color.fromRGBO(zone.color.red, zone.color.green, zone.color.blue, 0.15), child: Icon(zone.icon, color: zone.color)), const SizedBox(width: 10), Expanded(child: Text('${zone.name}\n${zone.risk}'))]),
       const SizedBox(height: 18),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Risiconiveau', style: TextStyle(fontWeight: FontWeight.bold)), Text('${_risk.round()}%', style: TextStyle(color: color, fontWeight: FontWeight.bold))]),
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Risiconiveau', style: TextStyle(fontWeight: FontWeight.bold)), Text('${_risk.round()}%', style: TextStyle(color: color))]),
       const SizedBox(height: 8),
       LinearProgressIndicator(value: _risk / 100, minHeight: 12, color: color),
       const SizedBox(height: 10),
@@ -201,7 +202,7 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
   }
 
   Widget _zoneTile(_Zone zone) => Card(elevation: 2, child: ListTile(
-        leading: CircleAvatar(backgroundColor: zone.color.withOpacity(.15), child: Icon(zone.icon, color: zone.color)),
+        leading: CircleAvatar(backgroundColor: Color.fromRGBO(zone.color.red, zone.color.green, zone.color.blue, 0.15), child: Icon(zone.icon, color: zone.color)),
         title: Text(zone.name, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text('${zone.district} · ${zone.risk}'),
         trailing: const Icon(Icons.chevron_right, color: Color(0xFFE65100)),
@@ -304,8 +305,8 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
   }
 
   void _showReport(_Report report) => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (_) => SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [
-    Text(report.title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)), const SizedBox(height: 8), Text(report.type), const SizedBox(height: 20), SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close), label: const Text('Sluiten'), style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFF8F00)))),
-  ]))));
+    Text(report.title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)), const SizedBox(height: 8), Text(report.type), const SizedBox(height: 20), SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () { Navigator.pop(context); _map.move(report.location, 14); _notify('Report geselecteerd: ${report.title}'); }, icon: const Icon(Icons.map), label: const Text('Toon op kaart'))),
+  ])))));
 
   Future<void> _call(_Contact contact) async {
     final uri = Uri(scheme: 'tel', path: contact.phone.replaceAll(' ', ''));
@@ -313,8 +314,8 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
   }
 
   void _showNotifications() => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (_) => SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [
-    const Text('Meldingen', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), const SizedBox(height: 12), if (_notifications.isEmpty) const Text('Geen meldingen') else Expanded(child: ListView(children: _notifications.map((n) => Padding(padding: const EdgeInsets.all(8), child: Text(n))).toList())),
-  ]))));
+    const Text('Meldingen', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), const SizedBox(height: 12), if (_notifications.isEmpty) const Text('Geen meldingen') else Expanded(child: ListView(shrinkWrap: true, children: _notifications.map((n) => ListTile(title: Text(n))).toList())),
+  ])))));
 
   void _showSettings() => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (_) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
     const ListTile(title: Text('Instellingen', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -324,9 +325,8 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
   ])));
 
   void _emergency() => showModalBottomSheet<void>(context: context, showDragHandle: true, backgroundColor: const Color(0xFFD32F2F), builder: (_) => SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [
-    const Icon(Icons.sos, color: Colors.white, size: 48), const SizedBox(height: 12), const Text('Bel 112 bij direct gevaar.', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), const SizedBox(height: 24),
-    FilledButton.icon(onPressed: () async { final uri = Uri(scheme: 'tel', path: '112'); if (await canLaunchUrl(uri)) { await launchUrl(uri); _notify('Noodoproep: 112'); } }, icon: const Icon(Icons.phone), label: const Text('Bel 112'), style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFFD32F2F))),
-    const SizedBox(height: 10), FilledButton.icon(onPressed: () { Navigator.pop(context); _notify('Noodcontacten ingelicht'); _snack('Noodcontacten zijn ingelicht.'); }, icon: const Icon(Icons.person_add), label: const Text('Waarschuw contacten'), style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFFD32F2F))),
+    const Icon(Icons.sos, color: Colors.white, size: 48), const SizedBox(height: 12), const Text('Bel 112 bij direct gevaar.', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), const SizedBox(height: 12), FilledButton.icon(onPressed: () async { final uri = Uri(scheme: 'tel', path: '112'); if (await canLaunchUrl(uri)) { await launchUrl(uri); _notify('Noodoproep: 112'); } }, icon: const Icon(Icons.phone, color: Colors.white), label: const Text('Bel 112'), style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black)),
+    const SizedBox(height: 10), FilledButton.icon(onPressed: () { Navigator.pop(context); _notify('Noodcontacten ingelicht'); _snack('Noodcontacten zijn ingelicht.'); }, icon: const Icon(Icons.person, color: Colors.white), label: const Text('Informeer noodcontacten'), style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black)),
     const SizedBox(height: 8), OutlinedButton(onPressed: () => Navigator.pop(context), style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white)), child: const Text('Annuleren', style: TextStyle(color: Colors.white))),
   ]))));
 }
@@ -358,7 +358,7 @@ class _Marker extends StatelessWidget {
   const _Marker({required this.color, required this.label}); 
   @override 
   Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [
-    Container(width: 40, height: 40, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)), child: Center(child: Text(label.isNotEmpty ? label[0] : '?', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
+    Container(width: 40, height: 40, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)), child: Center(child: Text(label.isNotEmpty ? label[0] : '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
     CustomPaint(painter: _TrianglePainter(color), size: const Size(10, 8)),
   ]); 
 }
@@ -369,7 +369,7 @@ class _TrianglePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = color;
-    final path = Path()..moveTo(size.width / 2, 0)..lineTo(0, size.height)..lineTo(size.width, size.height)..close();
+    final path = ui.Path()..moveTo(size.width / 2, 0)..lineTo(0, size.height)..lineTo(size.width, size.height)..close();
     canvas.drawPath(path, paint);
   }
   @override
