@@ -189,29 +189,68 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
     if (_zones.isEmpty) return const SizedBox.shrink();
     final zone = _zones[_zone];
     final color = _risk > 70 ? const Color(0xFFD32F2F) : (_risk > 40 ? const Color(0xFFFF8F00) : const Color(0xFFFFC107));
-    return Card(elevation: 3, child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [CircleAvatar(backgroundColor: Color.fromARGB((0.15 * 255).toInt(), zone.color.value >> 16 & 0xFF, zone.color.value >> 8 & 0xFF, zone.color.value & 0xFF), child: Icon(zone.icon, color: zone.color)), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(zone.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), Text(zone.district)]))]),
-      const SizedBox(height: 18),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Risiconiveau', style: TextStyle(fontWeight: FontWeight.bold)), Text('${_risk.round()}%', style: TextStyle(color: color, fontWeight: FontWeight.bold))]),
-      const SizedBox(height: 8),
-      LinearProgressIndicator(value: _risk / 100, minHeight: 12, color: color),
-      const SizedBox(height: 10),
-      Text(_risk > 70 ? 'Blijf alert en verlaat het gebied als dat mogelijk is.' : 'Houd je route in de gaten.', style: TextStyle(color: color)),
-      Align(alignment: Alignment.centerRight, child: Text('Tijd in zone: ${_seconds ~/ 60} min ${_seconds % 60} s', style: const TextStyle(fontSize: 12))),
-    ])));
+    return Card(
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Color.fromARGB((0.15 * 255).toInt(), zone.color.r, zone.color.g, zone.color.b),
+                  child: Icon(zone.icon, color: Color.fromARGB((0.8 * 255).toInt(), zone.color.r, zone.color.g, zone.color.b)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(zone.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                      const SizedBox(height: 4),
+                      Text('${zone.district} · ${zone.risk}', style: const TextStyle(color: Colors.black54)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Risiconiveau', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text('${_risk.round()}%', style: TextStyle(color: color)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(value: _risk / 100, minHeight: 12, color: color),
+            const SizedBox(height: 10),
+            Text(_risk > 70 ? 'Blijf alert en verlaat het gebied als dat mogelijk is.' : 'Houd je route in de gaten.', style: TextStyle(color: color)),
+            Align(alignment: Alignment.centerRight, child: Text('Tijd in zone: ${_seconds ~/ 60} min ${_seconds % 60} s', style: const TextStyle(fontSize: 12))),
+          ],
+        ),
+      ),
+    );
   }
 
-  Widget _zoneTile(_Zone zone) => Card(elevation: 2, child: ListTile(
-        leading: CircleAvatar(backgroundColor: Color.fromARGB((0.15 * 255).toInt(), zone.color.value >> 16 & 0xFF, zone.color.value >> 8 & 0xFF, zone.color.value & 0xFF), child: Icon(zone.icon, color: zone.color)),
-        title: Text(zone.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('${zone.district} · ${zone.risk}'),
-        trailing: const Icon(Icons.chevron_right, color: Color(0xFFE65100)),
-        onTap: () {
-          setState(() { _zone = _zones.indexOf(zone); _page = 1; _seconds = 0; });
-          _map.move(zone.location, 14);
-          _notify('Zone geselecteerd: ${zone.name}');
-        },
-      ));
+  Widget _zoneTile(_Zone zone) => Card(
+        elevation: 2,
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: Color.fromARGB((0.15 * 255).toInt(), zone.color.r, zone.color.g, zone.color.b),
+            child: Icon(zone.icon, color: Color.fromARGB((0.85 * 255).toInt(), zone.color.r, zone.color.g, zone.color.b)),
+          ),
+          title: Text(zone.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Text('${zone.district} · ${zone.risk}'),
+          trailing: const Icon(Icons.chevron_right, color: Color(0xFFE65100)),
+          onTap: () {
+            setState(() { _zone = _zones.indexOf(zone); _page = 1; _seconds = 0; });
+            _map.move(zone.location, 14);
+            _notify('Zone geselecteerd: ${zone.name}');
+          },
+        ),
+      );
 
   Widget _mapPage() => ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 100), children: [
         Text('Veiligheidskaart', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
@@ -227,7 +266,8 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
     if (_position != null) markers.add(Marker(point: LatLng(_position!.latitude, _position!.longitude), child: const Icon(Icons.my_location, color: Colors.blue, size: 28)));
     return SizedBox(height: 300, child: ClipRRect(borderRadius: BorderRadius.circular(18), child: Stack(children: [
       FlutterMap(mapController: _map, options: MapOptions(initialCenter: _center, initialZoom: 12.5), children: [
-        TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.example.safezone'), MarkerLayer(markers: markers),
+        TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.example.safezone'),
+        MarkerLayer(markers: markers),
       ]),
       Positioned(right: 12, bottom: 12, child: FloatingActionButton.small(backgroundColor: const Color(0xFFFFC107), onPressed: _locate, child: const Icon(Icons.my_location))),
     ])));
@@ -249,8 +289,8 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
         const SizedBox(height: 16),
         if (_contacts.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('Geen contacten toegevoegd. Voeg contacten toe voor noodgeval.'))
         else ..._contacts.map((c) => Card(elevation: 2, child: ListTile(
-          leading: CircleAvatar(backgroundColor: const Color(0xFFFFC107), child: Icon(c.icon)), 
-          title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold)), 
+          leading: CircleAvatar(backgroundColor: const Color(0xFFFFC107), child: Icon(c.icon)),
+          title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold)),
           subtitle: Text(c.phone),
           trailing: IconButton(onPressed: () => _call(c), icon: const Icon(Icons.phone, color: Color(0xFFD32F2F))),
         ))),
@@ -258,9 +298,9 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
 
   Widget _reportTile(_Report report) => Card(elevation: 2, child: ListTile(
     leading: Icon(report.type == 'Veilige plek' ? Icons.shield : Icons.warning_amber, color: report.type == 'Veilige plek' ? const Color(0xFFFFC107) : const Color(0xFFD32F2F)),
-    title: Text(report.title, style: const TextStyle(fontWeight: FontWeight.bold)), 
-    subtitle: Text(report.type), 
-    trailing: const Icon(Icons.chevron_right), 
+    title: Text(report.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+    subtitle: Text(report.type),
+    trailing: const Icon(Icons.chevron_right),
     onTap: () => _showReport(report),
   ));
 
@@ -289,7 +329,7 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
       title: const Text('Contact toevoegen'),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(controller: name, autofocus: true, decoration: const InputDecoration(labelText: 'Naam', border: OutlineInputBorder())),
-        const SizedBox(height: 12), 
+        const SizedBox(height: 12),
         TextField(controller: phone, decoration: const InputDecoration(labelText: 'Telefoonnummer', hintText: '06 12 34 56 78', border: OutlineInputBorder()), keyboardType: TextInputType.phone),
       ]),
       actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Annuleren')), FilledButton(onPressed: () {
@@ -371,10 +411,10 @@ class _SafeZoneHomeState extends State<SafeZoneHome> {
     const SizedBox(height: 12),
     const Text('Bel 112 bij direct gevaar.', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
     const SizedBox(height: 20),
-    FilledButton.icon(onPressed: () { Navigator.pop(context); _notify('Noodcontacten ingelicht'); _snack('Noodcontacten zijn ingelicht.'); }, icon: const Icon(Icons.person), label: const Text('Noodcontacten waarschuwen')),
+    FilledButton.icon(onPressed: () { Navigator.pop(context); _notify('Noodcontacten ingelicht'); _snack('Noodcontacten zijn ingelicht.'); }, icon: const Icon(Icons.person), label: const Text('Noodcontacten melden')),
     const SizedBox(height: 8),
     OutlinedButton(onPressed: () => Navigator.pop(context), style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white)), child: const Text('Annuleren', style: TextStyle(color: Colors.white))),
-  ]))));
+  ])));
 }
 
 class _Zone { 
@@ -386,38 +426,54 @@ class _Zone {
   const _Zone(this.name, this.district, this.risk, this.color, this.icon, this.location, this.minutes); 
 }
 
-class _Contact { 
-  final String name, phone; 
-  final IconData icon; 
-  const _Contact(this.name, this.phone, this.icon); 
+class _Contact {
+  final String name, phone;
+  final IconData icon;
+  const _Contact(this.name, this.phone, this.icon);
 }
 
-class _Report { 
-  final String title, type; 
-  final LatLng location; 
-  const _Report(this.title, this.type, this.location); 
+class _Report {
+  final String title, type;
+  final LatLng location;
+  const _Report(this.title, this.type, this.location);
 }
 
-class _Marker extends StatelessWidget { 
-  final Color color; 
-  final String label; 
-  const _Marker({required this.color, required this.label}); 
-  @override 
+class _Marker extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _Marker({required this.color, required this.label});
+
+  @override
   Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [
-    Container(width: 40, height: 40, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)), child: Center(child: Text(label.isNotEmpty ? label[0] : '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
+    Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: Center(child: Text(label.isNotEmpty ? label.substring(0, 1).toUpperCase() : '')),
+    ),
     CustomPaint(painter: _TrianglePainter(color), size: const Size(10, 8)),
-  ]); 
+  ]);
 }
 
 class _TrianglePainter extends CustomPainter {
   final Color color;
   _TrianglePainter(this.color);
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = color;
-    final path = ui.Path()..moveTo(size.width / 2, 0)..lineTo(0, size.height)..lineTo(size.width, size.height)..close();
+    final path = ui.Path()
+      ..moveTo(size.width / 2, 0)
+      ..lineTo(0, size.height)
+      ..lineTo(size.width, size.height)
+      ..close();
     canvas.drawPath(path, paint);
   }
+
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
